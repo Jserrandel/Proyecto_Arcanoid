@@ -19,6 +19,9 @@ barrarect = barra_normal.get_rect()
 barrarect.move_ip(360, 550)  # Ajustar posición de la barra
 barra = barra_normal  # Inicialmente, la barra es normal
 
+# Cargar imagen de fondo
+fondo = pygame.image.load("fondo 2.png")
+
 imagenes_ladrillos = {
     "azul": pygame.image.load("Ladrillo azul.png"),
     "rosa": pygame.image.load("Ladrillo rosa.png"),
@@ -38,6 +41,7 @@ speed = [0, 0]  # La pelota no se moverá hasta que inicie el juego
 puntuacion = 0
 nivel = 1
 barra_agrandada = False  # Para controlar si la barra está agrandada
+pelota_iniciada = False  # Para controlar si la pelota ha sido iniciada
 
 # Clases de ladrillos
 efectos = []
@@ -136,12 +140,12 @@ def crear_nivel_1():
 
 def crear_nivel_2():
     ladrillos = []
-    posiciones = [
-        (100, 50), (200, 50), (300, 50), (400, 50), (500, 50), (600, 50),
-        (150, 100), (250, 100), (350, 100), (450, 100), (550, 100),
-        (100, 150), (200, 150), (300, 150), (400, 150), (500, 150), (600, 150),
-        (150, 200), (250, 200), (350, 200), (450, 200), (550, 200)
-    ]
+    # Definir la forma de "X"
+    posiciones = []
+    for i in range(7):
+        posiciones.append((100 + i * 100, 50 + i * 50))  # Diagonal principal
+        posiciones.append((600 - i * 100, 50 + i * 50))  # Diagonal secundaria
+    
     colores = ["azul", "rosa", "verde", "rojo", "amarillo", "morado"]
     for x, y in posiciones:
         color = colores[(x // 100) % len(colores)]
@@ -155,15 +159,20 @@ def crear_nivel_2():
 
 def crear_nivel_3():
     ladrillos = []
-    posiciones = [
-        (100, 50), (200, 50), (300, 50), (400, 50), (500, 50), (600, 50),
-        (100, 100), (200, 100), (300, 100), (400, 100), (500, 100), (600, 100),
-        (100, 150), (200, 150), (300, 150), (400, 150), (500, 150), (600, 150),
-        (100, 200), (200, 200), (300, 200), (400, 200), (500, 200), (600, 200)
-    ]
+    # Definir la forma de círculo
+    centro_x, centro_y = 400, 150  # Centro del círculo
+    radio = 150  # Radio del círculo
+    angulo = 0
+    posiciones = []
+    while angulo < 360:
+        x = centro_x + radio * pygame.math.Vector2(1, 0).rotate(angulo).x
+        y = centro_y + radio * pygame.math.Vector2(1, 0).rotate(angulo).y
+        posiciones.append((int(x), int(y)))
+        angulo += 30  # Ajusta el ángulo para colocar ladrillos
+    
     colores = ["azul", "rosa", "verde", "rojo", "amarillo", "morado"]
-    for x, y in posiciones:
-        color = colores[(x // 100) % len(colores)]
+    for i, (x, y) in enumerate(posiciones):
+        color = colores[i % len(colores)]  # Asignar colores cíclicamente
         if color == "verde":
             ladrillos.append(LadrilloVerde(x, y))
         elif color == "rojo":
@@ -174,16 +183,17 @@ def crear_nivel_3():
 
 def crear_nivel_4():
     ladrillos = []
+    # Definir la forma de estrella
     posiciones = [
-        (100, 50), (200, 50), (300, 50), (400, 50), (500, 50), (600, 50),
-        (150, 100), (250, 100), (350, 100), (450, 100), (550, 100),
-        (100, 150), (200, 150), (300, 150), (400, 150), (500, 150), (600, 150),
-        (150, 200), (250, 200), (350, 200), (450, 200), (550, 200),
-        (100, 250), (200, 250), (300, 250), (400, 250), (500, 250), (600, 250)
+        (400, 50), (300, 150), (500, 150),  # Puntas superiores
+        (250, 250), (550, 250),  # Puntas laterales
+        (400, 350),  # Punta inferior
+        (350, 200), (450, 200)  # Puntas internas
     ]
+    
     colores = ["azul", "rosa", "verde", "rojo", "amarillo", "morado"]
-    for x, y in posiciones:
-        color = colores[(x // 100) % len(colores)]
+    for i, (x, y) in enumerate(posiciones):
+        color = colores[i % len(colores)]  # Asignar colores cíclicamente
         if color == "verde":
             ladrillos.append(LadrilloVerde(x, y))
         elif color == "rojo":
@@ -194,16 +204,18 @@ def crear_nivel_4():
 
 def crear_nivel_5():
     ladrillos = []
+    # Definir la forma de corazón
     posiciones = [
-        (100, 50), (200, 50), (300, 50), (400, 50), (500, 50), (600, 50),
-        (100, 100), (200, 100), (300, 100), (400, 100), (500, 100), (600, 100),
-        (100, 150), (200, 150), (300, 150), (400, 150), (500, 150), (600, 150),
-        (100, 200), (200, 200), (300, 200), (400, 200), (500, 200), (600, 200),
-        (100, 250), (200, 250), (300, 250), (400, 250), (500, 250), (600, 250)
+        (350, 100), (450, 100),  # Parte superior del corazón
+        (300, 150), (400, 150), (500, 150),  # Parte media
+        (250, 200), (350, 200), (450, 200), (550, 200),  # Parte inferior
+        (300, 250), (400, 250), (500, 250),  # Base del corazón
+        (350, 300), (450, 300)  # Punta del corazón
     ]
+    
     colores = ["azul", "rosa", "verde", "rojo", "amarillo", "morado"]
-    for x, y in posiciones:
-        color = colores[(x // 100) % len(colores)]
+    for i, (x, y) in enumerate(posiciones):
+        color = colores[i % len(colores)]  # Asignar colores cíclicamente
         if color == "verde":
             ladrillos.append(LadrilloVerde(x, y))
         elif color == "rojo":
@@ -247,7 +259,7 @@ def solo_ladrillos_rojos(ladrillos):
 # Pantalla de inicio
 esperando_click = True
 while esperando_click:
-    ventana.fill((0, 0, 128))  # Fondo azul marino
+    ventana.blit(fondo, (0, 0))  # Dibujar el fondo
     texto = pygame.font.Font(None, 36).render("Haz click para empezar", True, (255, 255, 255))
     ventana.blit(texto, (300, 250))
     pygame.display.flip()
@@ -258,7 +270,6 @@ while esperando_click:
         if event.type == pygame.MOUSEBUTTONDOWN:
             esperando_click = False
             jugando = True
-            speed = [randint(3, 6), randint(3, 6)]
             ballrect.midbottom = barrarect.midtop  # La pelota comienza justo encima de la barra
             ladrillos = crear_ladrillos(nivel)  # Inicializar los ladrillos al inicio del juego
 
@@ -266,7 +277,7 @@ while esperando_click:
 ejecutando = True
 clock = pygame.time.Clock()
 while ejecutando:
-    ventana.fill((0, 0, 128))  # Fondo azul marino
+    ventana.blit(fondo, (0, 0))  # Dibujar el fondo
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -279,65 +290,74 @@ while ejecutando:
         if keys[pygame.K_RIGHT] and barrarect.right < 800:  # Limita el movimiento a la derecha
             barrarect.move_ip(5, 0)
 
-        ballrect.x += speed[0]
-        ballrect.y += speed[1]
-        if ballrect.left <= 0 or ballrect.right >= 800:
-            speed[0] = -speed[0]
-        if ballrect.top <= 0:
-            speed[1] = -speed[1]
-        if ballrect.bottom >= 600:
-            vidas -= 1
-            ballrect.midbottom = barrarect.midtop  # La pelota vuelve justo encima de la barra
-            if vidas == 0:
-                jugando = False
+        # Iniciar el movimiento de la pelota cuando se presiona una flecha
+        if not pelota_iniciada:
+            if keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]:
+                speed = [randint(3, 6), randint(3, 6)]
+                pelota_iniciada = True
 
-        if ballrect.colliderect(barrarect):
-            speed[1] = -speed[1]
+        if pelota_iniciada:
+            ballrect.x += speed[0]
+            ballrect.y += speed[1]
+            if ballrect.left <= 0 or ballrect.right >= 800:
+                speed[0] = -speed[0]
+            if ballrect.top <= 0:
+                speed[1] = -speed[1]
+            if ballrect.bottom >= 600:
+                vidas -= 1
+                ballrect.midbottom = barrarect.midtop  # La pelota vuelve justo encima de la barra
+                pelota_iniciada = False  # La pelota se detiene hasta que se presione una flecha
+                if vidas == 0:
+                    jugando = False
 
-        for ladrillo in ladrillos[:]:
-            if ballrect.colliderect(ladrillo.rect):
-                if isinstance(ladrillo, LadrilloVerde):
-                    if ladrillo.colisionar():
-                        ladrillos.remove(ladrillo)
-                        puntuacion += 10
-                elif isinstance(ladrillo, LadrilloRojo):
-                    pass  # No hacer nada, es irrompible
-                else:
-                    if ladrillo.colisionar():
-                        ladrillos.remove(ladrillo)
-                        puntuacion += 10
-                        if ladrillo.color == "rosa":
-                            efectos.append(EfectoAgrandar(icono_rosa, ladrillo.rect.x, ladrillo.rect.y))
-                        elif ladrillo.color == "azul":
-                            efectos.append(EfectoReducir(icono_azul, ladrillo.rect.x, ladrillo.rect.y))
-                # Ajusta la posición de la pelota para evitar colisiones múltiples
-                if speed[1] > 0:
-                    ballrect.bottom = ladrillo.rect.top
-                else:
-                    ballrect.top = ladrillo.rect.bottom
+            if ballrect.colliderect(barrarect):
                 speed[1] = -speed[1]
 
-        for efecto in efectos[:]:
-            efecto.mover()
-            efecto.dibujar(ventana)
-            if barrarect.colliderect(efecto.rect):
-                efecto.aplicar(barrarect)
-                efectos.remove(efecto)
+            for ladrillo in ladrillos[:]:
+                if ballrect.colliderect(ladrillo.rect):
+                    if isinstance(ladrillo, LadrilloVerde):
+                        if ladrillo.colisionar():
+                            ladrillos.remove(ladrillo)
+                            puntuacion += 10
+                    elif isinstance(ladrillo, LadrilloRojo):
+                        pass  # No hacer nada, es irrompible
+                    else:
+                        if ladrillo.colisionar():
+                            ladrillos.remove(ladrillo)
+                            puntuacion += 10
+                            if ladrillo.color == "rosa":
+                                efectos.append(EfectoAgrandar(icono_rosa, ladrillo.rect.x, ladrillo.rect.y))
+                            elif ladrillo.color == "azul":
+                                efectos.append(EfectoReducir(icono_azul, ladrillo.rect.x, ladrillo.rect.y))
+                    # Ajusta la posición de la pelota para evitar colisiones múltiples
+                    if speed[1] > 0:
+                        ballrect.bottom = ladrillo.rect.top
+                    else:
+                        ballrect.top = ladrillo.rect.bottom
+                    speed[1] = -speed[1]
 
-        # Verificar si solo quedan ladrillos rojos en el nivel actual
-        if solo_ladrillos_rojos(ladrillos):
-            if nivel == 5:  # Si es el último nivel, muestra la pantalla de victoria
-                mostrar_pantalla_carga(nivel, ultimo_nivel=True)
-                ejecutando = False  # Termina el juego después de ganar
-            else:
-                mostrar_pantalla_carga(nivel)
-                nivel += 1  # Pasa al siguiente nivel
-                speed[0] *= 1.1  # Aumenta la velocidad de la pelota
-                speed[1] *= 1.1
-                ladrillos = crear_ladrillos(nivel)  # Crea los ladrillos del nuevo nivel
-                ballrect.midbottom = barrarect.midtop  # La pelota comienza justo encima de la barra
-                barra = barra_normal  # Restablece la barra a su tamaño normal
-                barra_agrandada = False  # Restablece el estado de la barra
+            for efecto in efectos[:]:
+                efecto.mover()
+                efecto.dibujar(ventana)
+                if barrarect.colliderect(efecto.rect):
+                    efecto.aplicar(barrarect)
+                    efectos.remove(efecto)
+
+            # Verificar si solo quedan ladrillos rojos en el nivel actual
+            if solo_ladrillos_rojos(ladrillos):
+                if nivel == 5:  # Si es el último nivel, muestra la pantalla de victoria
+                    mostrar_pantalla_carga(nivel, ultimo_nivel=True)
+                    ejecutando = False  # Termina el juego después de ganar
+                else:
+                    mostrar_pantalla_carga(nivel)
+                    nivel += 1  # Pasa al siguiente nivel
+                    speed[0] *= 1.1  # Aumenta la velocidad de la pelota
+                    speed[1] *= 1.1
+                    ladrillos = crear_ladrillos(nivel)  # Crea los ladrillos del nuevo nivel
+                    ballrect.midbottom = barrarect.midtop  # La pelota comienza justo encima de la barra
+                    barra = barra_normal  # Restablece la barra a su tamaño normal
+                    barra_agrandada = False  # Restablece el estado de la barra
+                    pelota_iniciada = False  # La pelota se detiene hasta que se presione una flecha
 
     ventana.blit(ball, ballrect)
     ventana.blit(barra, barrarect)
@@ -362,7 +382,8 @@ while ejecutando:
             vidas = 3
             jugando = True
             ballrect.midbottom = barrarect.midtop  # La pelota vuelve justo encima de la barra
-            speed = [randint(3, 6), randint(3, 6)]
+            speed = [0, 0]  # La pelota no se mueve hasta que se presione una flecha
+            pelota_iniciada = False
             ladrillos = crear_ladrillos(nivel)
             efectos = []
     pygame.display.flip()
