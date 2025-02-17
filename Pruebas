@@ -1,0 +1,370 @@
+import pygame
+from random import randint
+import time
+
+pygame.init()
+ventana = pygame.display.set_mode((800, 600))  # Ventana más grande (800x600)
+pygame.display.set_caption("Arkanoid")
+
+# Cargar imágenes
+ball = pygame.image.load("Ball.png")
+ballrect = ball.get_rect()
+
+# Cargar imágenes de la barra
+barra_normal = pygame.image.load("barra.png")
+barra_grande = pygame.image.load("barra_grande.png")  # Asegúrate de tener esta imagen
+barra_pequena = pygame.image.load("barra_pequena.png")  # Asegúrate de tener esta imagen
+
+barrarect = barra_normal.get_rect()
+barrarect.move_ip(360, 550)  # Ajustar posición de la barra
+barra = barra_normal  # Inicialmente, la barra es normal
+
+imagenes_ladrillos = {
+    "azul": pygame.image.load("Ladrillo azul.png"),
+    "rosa": pygame.image.load("Ladrillo rosa.png"),
+    "verde": pygame.image.load("Ladrillo Verde.png"),
+    "rojo": pygame.image.load("Ladrillo rojo.png"),
+    "amarillo": pygame.image.load("Ladrillo amarillo.png"),
+    "morado": pygame.image.load("Ladrillo morado.png")
+}
+
+icono_rosa = pygame.image.load("Icono_grande.png")
+icono_azul = pygame.image.load("Icono_pequeno.png")
+
+# Variables del juego
+vidas = 3
+jugando = False
+speed = [0, 0]  # La pelota no se moverá hasta que inicie el juego
+puntuacion = 0
+nivel = 1
+barra_agrandada = False  # Para controlar si la barra está agrandada
+
+# Clases de ladrillos
+efectos = []
+ladrillos = []
+
+class Ladrillo:
+    def __init__(self, x, y, color):
+        self.rect = pygame.Rect(x, y, 60, 25)
+        self.imagen = imagenes_ladrillos[color]
+        self.color = color
+    
+    def dibujar(self, ventana):
+        ventana.blit(self.imagen, self.rect)
+    
+    def colisionar(self):
+        pass
+
+class LadrilloVerde(Ladrillo):
+    def __init__(self, x, y):
+        super().__init__(x, y, "verde")
+        self.vida = 3  # Requiere 3 golpes para romperse
+    
+    def colisionar(self):
+        self.vida -= 1
+        if self.vida == 0:
+            return True  # Se rompe
+        return False
+
+class LadrilloRojo(Ladrillo):
+    def __init__(self, x, y):
+        super().__init__(x, y, "rojo")
+    
+    def colisionar(self):
+        return False  # Irrompible
+
+class LadrilloNormal(Ladrillo):
+    def __init__(self, x, y, color):
+        super().__init__(x, y, color)
+    
+    def colisionar(self):
+        if self.color == "rosa":
+            return True  # Se rompe y aplica efecto
+        return True  # Se rompe
+
+# Clases de efectos
+class Efecto:
+    def __init__(self, imagen, x, y):
+        self.imagen = imagen
+        self.rect = imagen.get_rect()
+        self.rect.topleft = (x, y)
+        self.speed = 2
+    
+    def mover(self):
+        self.rect.y += self.speed
+    
+    def dibujar(self, ventana):
+        ventana.blit(self.imagen, self.rect)
+
+class EfectoAgrandar(Efecto):
+    def aplicar(self, barrarect):
+        global barra_agrandada, barra
+        if not barra_agrandada:  # Solo aplica si la barra no está ya agrandada
+            barrarect.inflate_ip(20, 0)
+            barra = barra_grande
+            barra_agrandada = True
+
+class EfectoReducir(Efecto):
+    def aplicar(self, barrarect):
+        global barra_agrandada, barra
+        if barra_agrandada:  # Si la barra está agrandada, la reducimos a su tamaño normal
+            barrarect.inflate_ip(-20, 0)
+            barra = barra_normal
+            barra_agrandada = False
+        else:  # Si la barra está en su tamaño normal, la reducimos aún más
+            barrarect.inflate_ip(-20, 0)
+            barra = barra_pequena
+
+# Funciones para crear niveles
+def crear_nivel_1():
+    ladrillos = []
+    posiciones = [
+        (100, 50), (200, 50), (300, 50), (400, 50), (500, 50), (600, 50),
+        (150, 100), (250, 100), (350, 100), (450, 100), (550, 100),
+        (100, 150), (200, 150), (300, 150), (400, 150), (500, 150), (600, 150)
+    ]
+    colores = ["azul", "rosa", "verde", "rojo", "amarillo", "morado"]
+    for x, y in posiciones:
+        color = colores[(x // 100) % len(colores)]  # Asignar colores en un patrón fijo
+        if color == "verde":
+            ladrillos.append(LadrilloVerde(x, y))
+        elif color == "rojo":
+            ladrillos.append(LadrilloRojo(x, y))
+        else:
+            ladrillos.append(LadrilloNormal(x, y, color))
+    return ladrillos
+
+def crear_nivel_2():
+    ladrillos = []
+    posiciones = [
+        (100, 50), (200, 50), (300, 50), (400, 50), (500, 50), (600, 50),
+        (150, 100), (250, 100), (350, 100), (450, 100), (550, 100),
+        (100, 150), (200, 150), (300, 150), (400, 150), (500, 150), (600, 150),
+        (150, 200), (250, 200), (350, 200), (450, 200), (550, 200)
+    ]
+    colores = ["azul", "rosa", "verde", "rojo", "amarillo", "morado"]
+    for x, y in posiciones:
+        color = colores[(x // 100) % len(colores)]
+        if color == "verde":
+            ladrillos.append(LadrilloVerde(x, y))
+        elif color == "rojo":
+            ladrillos.append(LadrilloRojo(x, y))
+        else:
+            ladrillos.append(LadrilloNormal(x, y, color))
+    return ladrillos
+
+def crear_nivel_3():
+    ladrillos = []
+    posiciones = [
+        (100, 50), (200, 50), (300, 50), (400, 50), (500, 50), (600, 50),
+        (100, 100), (200, 100), (300, 100), (400, 100), (500, 100), (600, 100),
+        (100, 150), (200, 150), (300, 150), (400, 150), (500, 150), (600, 150),
+        (100, 200), (200, 200), (300, 200), (400, 200), (500, 200), (600, 200)
+    ]
+    colores = ["azul", "rosa", "verde", "rojo", "amarillo", "morado"]
+    for x, y in posiciones:
+        color = colores[(x // 100) % len(colores)]
+        if color == "verde":
+            ladrillos.append(LadrilloVerde(x, y))
+        elif color == "rojo":
+            ladrillos.append(LadrilloRojo(x, y))
+        else:
+            ladrillos.append(LadrilloNormal(x, y, color))
+    return ladrillos
+
+def crear_nivel_4():
+    ladrillos = []
+    posiciones = [
+        (100, 50), (200, 50), (300, 50), (400, 50), (500, 50), (600, 50),
+        (150, 100), (250, 100), (350, 100), (450, 100), (550, 100),
+        (100, 150), (200, 150), (300, 150), (400, 150), (500, 150), (600, 150),
+        (150, 200), (250, 200), (350, 200), (450, 200), (550, 200),
+        (100, 250), (200, 250), (300, 250), (400, 250), (500, 250), (600, 250)
+    ]
+    colores = ["azul", "rosa", "verde", "rojo", "amarillo", "morado"]
+    for x, y in posiciones:
+        color = colores[(x // 100) % len(colores)]
+        if color == "verde":
+            ladrillos.append(LadrilloVerde(x, y))
+        elif color == "rojo":
+            ladrillos.append(LadrilloRojo(x, y))
+        else:
+            ladrillos.append(LadrilloNormal(x, y, color))
+    return ladrillos
+
+def crear_nivel_5():
+    ladrillos = []
+    posiciones = [
+        (100, 50), (200, 50), (300, 50), (400, 50), (500, 50), (600, 50),
+        (100, 100), (200, 100), (300, 100), (400, 100), (500, 100), (600, 100),
+        (100, 150), (200, 150), (300, 150), (400, 150), (500, 150), (600, 150),
+        (100, 200), (200, 200), (300, 200), (400, 200), (500, 200), (600, 200),
+        (100, 250), (200, 250), (300, 250), (400, 250), (500, 250), (600, 250)
+    ]
+    colores = ["azul", "rosa", "verde", "rojo", "amarillo", "morado"]
+    for x, y in posiciones:
+        color = colores[(x // 100) % len(colores)]
+        if color == "verde":
+            ladrillos.append(LadrilloVerde(x, y))
+        elif color == "rojo":
+            ladrillos.append(LadrilloRojo(x, y))
+        else:
+            ladrillos.append(LadrilloNormal(x, y, color))
+    return ladrillos
+
+# Crear ladrillos según el nivel
+def crear_ladrillos(nivel):
+    if nivel == 1:
+        return crear_nivel_1()
+    elif nivel == 2:
+        return crear_nivel_2()
+    elif nivel == 3:
+        return crear_nivel_3()
+    elif nivel == 4:
+        return crear_nivel_4()
+    elif nivel == 5:
+        return crear_nivel_5()
+    return []
+
+# Función para mostrar la pantalla de carga entre niveles
+def mostrar_pantalla_carga(nivel, ultimo_nivel=False):
+    ventana.fill((0, 0, 128))  # Fondo azul marino
+    if ultimo_nivel:
+        texto = pygame.font.Font(None, 50).render("You Win!", True, (255, 255, 255))
+    else:
+        texto = pygame.font.Font(None, 50).render(f"You Pass! Nivel {nivel}", True, (255, 255, 255))
+    ventana.blit(texto, (300, 250))
+    pygame.display.flip()
+    time.sleep(3)  # Espera 3 segundos
+
+# Función para verificar si solo quedan ladrillos rojos
+def solo_ladrillos_rojos(ladrillos):
+    for ladrillo in ladrillos:
+        if not isinstance(ladrillo, LadrilloRojo):
+            return False
+    return True
+
+# Pantalla de inicio
+esperando_click = True
+while esperando_click:
+    ventana.fill((0, 0, 128))  # Fondo azul marino
+    texto = pygame.font.Font(None, 36).render("Haz click para empezar", True, (255, 255, 255))
+    ventana.blit(texto, (300, 250))
+    pygame.display.flip()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            exit()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            esperando_click = False
+            jugando = True
+            speed = [randint(3, 6), randint(3, 6)]
+            ballrect.midbottom = barrarect.midtop  # La pelota comienza justo encima de la barra
+            ladrillos = crear_ladrillos(nivel)  # Inicializar los ladrillos al inicio del juego
+
+# Bucle principal
+ejecutando = True
+clock = pygame.time.Clock()
+while ejecutando:
+    ventana.fill((0, 0, 128))  # Fondo azul marino
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            ejecutando = False
+
+    if jugando:
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] and barrarect.left > 0:  # Limita el movimiento a la izquierda
+            barrarect.move_ip(-5, 0)
+        if keys[pygame.K_RIGHT] and barrarect.right < 800:  # Limita el movimiento a la derecha
+            barrarect.move_ip(5, 0)
+
+        ballrect.x += speed[0]
+        ballrect.y += speed[1]
+        if ballrect.left <= 0 or ballrect.right >= 800:
+            speed[0] = -speed[0]
+        if ballrect.top <= 0:
+            speed[1] = -speed[1]
+        if ballrect.bottom >= 600:
+            vidas -= 1
+            ballrect.midbottom = barrarect.midtop  # La pelota vuelve justo encima de la barra
+            if vidas == 0:
+                jugando = False
+
+        if ballrect.colliderect(barrarect):
+            speed[1] = -speed[1]
+
+        for ladrillo in ladrillos[:]:
+            if ballrect.colliderect(ladrillo.rect):
+                if isinstance(ladrillo, LadrilloVerde):
+                    if ladrillo.colisionar():
+                        ladrillos.remove(ladrillo)
+                        puntuacion += 10
+                elif isinstance(ladrillo, LadrilloRojo):
+                    pass  # No hacer nada, es irrompible
+                else:
+                    if ladrillo.colisionar():
+                        ladrillos.remove(ladrillo)
+                        puntuacion += 10
+                        if ladrillo.color == "rosa":
+                            efectos.append(EfectoAgrandar(icono_rosa, ladrillo.rect.x, ladrillo.rect.y))
+                        elif ladrillo.color == "azul":
+                            efectos.append(EfectoReducir(icono_azul, ladrillo.rect.x, ladrillo.rect.y))
+                # Ajusta la posición de la pelota para evitar colisiones múltiples
+                if speed[1] > 0:
+                    ballrect.bottom = ladrillo.rect.top
+                else:
+                    ballrect.top = ladrillo.rect.bottom
+                speed[1] = -speed[1]
+
+        for efecto in efectos[:]:
+            efecto.mover()
+            efecto.dibujar(ventana)
+            if barrarect.colliderect(efecto.rect):
+                efecto.aplicar(barrarect)
+                efectos.remove(efecto)
+
+        # Verificar si solo quedan ladrillos rojos en el nivel actual
+        if solo_ladrillos_rojos(ladrillos):
+            if nivel == 5:  # Si es el último nivel, muestra la pantalla de victoria
+                mostrar_pantalla_carga(nivel, ultimo_nivel=True)
+                ejecutando = False  # Termina el juego después de ganar
+            else:
+                mostrar_pantalla_carga(nivel)
+                nivel += 1  # Pasa al siguiente nivel
+                speed[0] *= 1.1  # Aumenta la velocidad de la pelota
+                speed[1] *= 1.1
+                ladrillos = crear_ladrillos(nivel)  # Crea los ladrillos del nuevo nivel
+                ballrect.midbottom = barrarect.midtop  # La pelota comienza justo encima de la barra
+                barra = barra_normal  # Restablece la barra a su tamaño normal
+                barra_agrandada = False  # Restablece el estado de la barra
+
+    ventana.blit(ball, ballrect)
+    ventana.blit(barra, barrarect)
+    for ladrillo in ladrillos:
+        ladrillo.dibujar(ventana)
+    for efecto in efectos:
+        efecto.mover()
+        efecto.dibujar(ventana)
+    vidas_texto = pygame.font.Font(None, 36).render(f"Vidas: {vidas}", True, (255, 255, 255))
+    ventana.blit(vidas_texto, (10, 10))
+    puntuacion_texto = pygame.font.Font(None, 36).render(f"Puntuación: {puntuacion}", True, (255, 255, 255))
+    ventana.blit(puntuacion_texto, (650, 10))
+    nivel_texto = pygame.font.Font(None, 36).render(f"Nivel: {nivel}", True, (255, 255, 255))
+    ventana.blit(nivel_texto, (350, 10))
+    if not jugando and vidas == 0:
+        texto_game_over = pygame.font.Font(None, 50).render("Game Over", True, (255, 0, 0))
+        ventana.blit(texto_game_over, (300, 250))
+        texto_reiniciar = pygame.font.Font(None, 36).render("Presiona R para reiniciar", True, (255, 255, 255))
+        ventana.blit(texto_reiniciar, (280, 300))
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_r]:
+            vidas = 3
+            jugando = True
+            ballrect.midbottom = barrarect.midtop  # La pelota vuelve justo encima de la barra
+            speed = [randint(3, 6), randint(3, 6)]
+            ladrillos = crear_ladrillos(nivel)
+            efectos = []
+    pygame.display.flip()
+    clock.tick(60)
+pygame.quit()
