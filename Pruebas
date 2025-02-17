@@ -3,6 +3,16 @@ from random import randint
 import time
 
 pygame.init()
+# Inicializar el mixer de Pygame
+pygame.mixer.init()
+
+# Cargar el sonido de fondo
+pygame.mixer.music.load("Sonido.mp3")  # Asegúrate de tener el archivo "sonido.wav" en la misma carpeta
+pygame.mixer.music.set_volume(0.5)  # Ajustar el volumen (opcional)
+pygame.mixer.music.play(-1)  # Reproducir en bucle
+
+ventana = pygame.display.set_mode((800, 600))  # Ventana más grande (800x600)
+pygame.display.set_caption("Arkanoid")
 ventana = pygame.display.set_mode((800, 600))  # Ventana más grande (800x600)
 pygame.display.set_caption("Arkanoid")
 
@@ -388,4 +398,6 @@ while ejecutando:
             efectos = []
     pygame.display.flip()
     clock.tick(60)
+# Detener el sonido cuando el juego termina
+pygame.mixer.music.stop()
 pygame.quit()
